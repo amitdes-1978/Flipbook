@@ -26,7 +26,7 @@ Then open http://localhost:8080. Opening the files directly with `file://` doesn
 | Source | What happens |
 |---|---|
 | **PDF (single or batch)** | Pages rendered at Standard, High or Ultra quality. Text is extracted for search and read-aloud. **Links, internal page jumps and the outline become hotspots and a table of contents automatically.** |
-| **AI writer** | Describe a topic, audience, tone and length; optionally paste source notes. Claude writes a complete publication with chapters, quizzes, charts, stats and CTAs, and FlipForge lays it out. There's also an in-editor AI assistant ("add a chapter on…", "translate to Spanish"). |
+| **AI writer** | **Free mode:** FlipForge builds a prompt, you paste it into the free Claude.ai chat (or any AI chat) and paste the answer back — no API key. **Automatic mode:** with your own Anthropic API key. Describe a topic, audience, tone and length; optionally paste source notes. Claude writes a complete publication with chapters, quizzes, charts, stats and CTAs, and FlipForge lays it out. There's also an in-editor AI assistant ("add a chapter on…", "translate to Spanish"). |
 | **Templates** | 12 designed starters × 9 typographic themes (Aurora, Classic, Editorial, Minimal, Noir, Corporate, Fresh, Playful, Luxe) × 6 page sizes. |
 | **Write / Markdown / TXT / HTML** | Text is typeset automatically: pagination, chapter openers, drop caps, folios, table of contents, cover and back cover. |
 | **CSV spreadsheet** | Builds a shoppable product catalog (sections from the `category` column). |

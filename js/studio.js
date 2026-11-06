@@ -146,7 +146,7 @@ function createView() {
     <div class="content">
       <div class="create-grid">
         <button class="create-card" data-c="pdf"><div class="cc-ico">${icon('upload')}</div><h3>Upload PDF</h3><p>Convert one or many PDFs (batch) into flipbooks. Links and outline are detected automatically.</p></button>
-        <button class="create-card hot" data-c="ai"><div class="cc-ico">${icon('wand')}</div><h3>Generate with AI</h3><p>Describe a topic — Claude writes a complete interactive ebook, course, report or magazine.</p></button>
+        <button class="create-card hot" data-c="ai"><div class="cc-ico">${icon('wand')}</div><h3>Generate with AI</h3><p>Describe a topic — AI writes a complete interactive ebook, course, report or magazine. Free mode needs no API key.</p></button>
         <button class="create-card" data-c="tpl"><div class="cc-ico">${icon('grid')}</div><h3>Start from a template</h3><p>${TEMPLATES.length} designed starters: ebook, magazine, catalog, menu, report, course…</p></button>
         <button class="create-card" data-c="write"><div class="cc-ico">${icon('edit')}</div><h3>Write from scratch</h3><p>Type or paste text; pages, typography and contents are laid out for you.</p></button>
         <button class="create-card" data-c="images"><div class="cc-ico">${icon('image')}</div><h3>Photo book / scans</h3><p>Turn JPG, PNG or WebP images into a page-flip album or portfolio.</p></button>
@@ -295,8 +295,10 @@ function csvFlow() {
 async function aiFlow() {
   const ai = await import('./ai.js');
   const key = await ai.getKey();
-  const { el, close } = dialog(`<h2>${icon('wand')} Generate with AI</h2><p class="dlg-sub">Claude writes the full publication — chapters, quizzes, charts and calls to action — then FlipForge designs the pages.</p>
-    ${key ? '' : `<label class="field"><span>Anthropic API key</span><input type="password" data-key placeholder="sk-ant-…" autocomplete="off"><small>Stored only in this browser and sent directly to api.anthropic.com. Get one at console.anthropic.com.</small></label>`}
+  let mode = key ? 'api' : 'free';
+  const { el, close } = dialog(`<h2>${icon('wand')} Generate with AI</h2><p class="dlg-sub">AI writes the full publication — chapters, quizzes, charts and calls to action — then FlipForge designs the pages.</p>
+    <div class="seg" data-mode style="margin-bottom:16px"><button data-v="free">Free — use any AI chat (no key)</button><button data-v="api">Automatic — Anthropic API key</button></div>
+    <label class="field" data-only="api"><span>Anthropic API key</span><input type="password" data-key placeholder="${key ? '•••••• saved — leave empty to keep' : 'sk-ant-…'}" autocomplete="off"><small>Paid per use (about $0.20–0.50 per ebook). Stored only in this browser and sent directly to api.anthropic.com.</small></label>
     <label class="field"><span>What should it be about?</span><textarea rows="3" data-topic placeholder="e.g. A beginner's guide to sourdough baking at home"></textarea></label>
     <div class="grid2">
       <label class="field"><span>Publication type</span><select data-type><option>ebook</option><option>online course workbook with quizzes</option><option>magazine issue</option><option>annual report</option><option>sales proposal</option><option>product brochure</option><option>employee handbook</option><option>newsletter</option><option>cookbook</option><option>travel guide</option><option>children's story book</option><option>case study</option></select></label>
@@ -308,24 +310,52 @@ async function aiFlow() {
     </div>
     <label class="field"><span>Extra instructions (optional)</span><input data-extra placeholder="Include a checklist at the end; mention our brand 'Crust & Co'"></label>
     <label class="field"><span>Source material (optional)</span><textarea rows="3" data-src placeholder="Paste notes, an article or existing text to build from…"></textarea></label>
+    <div data-only="free" class="card" style="padding:16px;margin-bottom:6px">
+      <b>1.</b> Fill in the fields above, then <button class="btn sm primary" data-copy>${icon('copy', 14)} Copy prompt</button><br>
+      <b>2.</b> Paste it into a free AI chat: <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a> (or any other chat assistant) and send it.<br>
+      <b>3.</b> Copy the AI's whole answer and paste it here:
+      <textarea class="input code" rows="7" data-paste style="margin-top:10px" placeholder="title: …&#10;subtitle: …&#10;&#10;# Chapter one…"></textarea>
+    </div>
     <div class="ai-out" data-out hidden></div>
-    <div class="dlg-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" data-go>${icon('spark', 16)} Generate</button></div>`, { wide: true, dismissable: true });
-  let ac = null;
+    <div class="dlg-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" data-go></button></div>`, { wide: true, dismissable: true });
+  const v = (s) => el.querySelector(s).value;
+  const opts = () => ({ topic: v('[data-topic]').trim(), type: v('[data-type]'), audience: v('[data-aud]'), tone: v('[data-tone]'), length: v('[data-len]'), language: v('[data-lang]'), extras: v('[data-extra]'), sourceText: v('[data-src]') });
+  const setMode = (m) => {
+    mode = m;
+    el.querySelectorAll('[data-mode] button').forEach(b => b.classList.toggle('on', b.dataset.v === m));
+    el.querySelectorAll('[data-only]').forEach(n => { n.hidden = n.dataset.only !== m; });
+    el.querySelector('[data-go]').innerHTML = m === 'free' ? `${icon('check', 16)} Create publication` : `${icon('spark', 16)} Generate`;
+  };
+  el.querySelectorAll('[data-mode] button').forEach(b => b.onclick = () => setMode(b.dataset.v));
+  setMode(mode);
+  el.querySelector('[data-copy]').onclick = async () => {
+    const o = opts(); if (!o.topic) return toast('Describe the topic first', true);
+    const text = ai.freePrompt(o);
+    try { await navigator.clipboard.writeText(text); toast('Prompt copied — paste it into the AI chat'); }
+    catch { const t = el.querySelector('[data-paste]'); t.value = text; t.select(); toast('Select-all and copy this prompt, then clear the box', true); }
+  };
+  const finish = async (md) => {
+    const type = v('[data-type]').split(' ')[0];
+    const b = await composedBook({ md, theme: v('[data-theme]'), size: type === 'sales' ? 'landscape' : type === 'magazine' ? 'letter' : 'a4', type: ['magazine', 'annual', 'sales', 'product', 'newsletter', 'cookbook'].includes(type) ? { annual: 'report', sales: 'proposal', product: 'brochure' }[type] || type : 'ebook' });
+    close(); toast('Your publication is ready'); location.hash = '#/edit/' + b.id;
+  };
   el.querySelector('[data-go]').onclick = async () => {
     const go = el.querySelector('[data-go]');
-    const apiKey = el.querySelector('[data-key]')?.value.trim() || key;
-    const topic = el.querySelector('[data-topic]').value.trim();
-    if (!apiKey) return toast('Add your Anthropic API key', true);
-    if (!topic) return toast('Describe the topic first', true);
-    if (el.querySelector('[data-key]')) await ai.setKey(apiKey);
+    if (mode === 'free') {
+      const md = ai.cleanPasted(v('[data-paste]'));
+      if (md.length < 40) return toast('Paste the AI answer into step 3 first', true);
+      return finish(md);
+    }
+    const apiKey = v('[data-key]').trim() || key;
+    const o = opts();
+    if (!apiKey) return toast('Add your Anthropic API key — or switch to Free mode', true);
+    if (!o.topic) return toast('Describe the topic first', true);
+    if (v('[data-key]').trim()) await ai.setKey(apiKey);
     const out = el.querySelector('[data-out]'); out.hidden = false; out.textContent = 'Thinking…';
     go.disabled = true; go.textContent = 'Writing…';
-    ac = new AbortController();
     try {
-      const md = await ai.generatePublication({ apiKey, topic, type: el.querySelector('[data-type]').value, audience: el.querySelector('[data-aud]').value, tone: el.querySelector('[data-tone]').value, length: el.querySelector('[data-len]').value, language: el.querySelector('[data-lang]').value, extras: el.querySelector('[data-extra]').value, sourceText: el.querySelector('[data-src]').value }, { signal: ac.signal, onText: (t) => { out.textContent = t; out.scrollTop = out.scrollHeight; } });
-      const type = el.querySelector('[data-type]').value.split(' ')[0];
-      const b = await composedBook({ md, theme: el.querySelector('[data-theme]').value, size: type === 'sales' ? 'landscape' : type === 'magazine' ? 'letter' : 'a4', type: ['magazine', 'annual', 'sales', 'product', 'newsletter', 'cookbook'].includes(type) ? { annual: 'report', sales: 'proposal', product: 'brochure' }[type] || type : 'ebook' });
-      close(); toast('Your publication is ready'); location.hash = '#/edit/' + b.id;
+      const md = await ai.generatePublication({ apiKey, ...o }, { onText: (t) => { out.textContent = t; out.scrollTop = out.scrollHeight; } });
+      await finish(md);
     } catch (e) { toast(ai.friendlyError(e), true); go.disabled = false; go.textContent = 'Try again'; }
   };
 }

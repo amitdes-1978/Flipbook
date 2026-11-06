@@ -33,8 +33,9 @@ Rules:
  * Stream a publication. onText receives the growing markdown.
  * @returns {Promise<string>} final markdown
  */
-export async function generatePublication({ apiKey, topic, type, audience, tone, length, language, extras, sourceText }, { onText, signal } = {}) {
-  const prompt = [
+/** The user prompt for a new publication (shared by API mode and free copy/paste mode). */
+export function buildUserPrompt({ topic, type, audience, tone, length, language, extras, sourceText }) {
+  return [
     `Create a ${type} about: ${topic}`,
     audience && `Audience: ${audience}`,
     tone && `Tone: ${tone}`,
@@ -43,6 +44,25 @@ export async function generatePublication({ apiKey, topic, type, audience, tone,
     extras && `Extra requirements: ${extras}`,
     sourceText && `Base the content on this source material:\n<source>\n${sourceText.slice(0, 120000)}\n</source>`,
   ].filter(Boolean).join('\n');
+}
+
+/** One self-contained prompt to paste into any free AI chat (no API key needed). */
+export function freePrompt(opts) {
+  return SYSTEM + '\n\n---\n\n' + buildUserPrompt(opts) + '\n\nReply with the document only, as plain text (no code block).';
+}
+export function freeRevisePrompt(markdown, instruction) {
+  return SYSTEM + '\n\nYou will receive an existing document and an instruction. Return the full revised document only, as plain text (no code block).\n\nInstruction: ' + instruction + '\n\n<document>\n' + markdown + '\n</document>';
+}
+/** Clean what people paste back from a chat window. */
+export function cleanPasted(text) {
+  let t = String(text || '').trim().replace(/^```[\w-]*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  const i = t.search(/^title\s*:/mi);   // drop any chatty preamble before the front matter
+  if (i > 0) t = t.slice(i);
+  return t;
+}
+
+export async function generatePublication({ apiKey, topic, type, audience, tone, length, language, extras, sourceText }, { onText, signal } = {}) {
+  const prompt = buildUserPrompt({ topic, type, audience, tone, length, language, extras, sourceText });
 
   const stream = client(apiKey).beta.messages.stream({
     model: MODEL,

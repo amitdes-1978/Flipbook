@@ -387,7 +387,7 @@ export async function openEditor(app, id) {
       <p class="faint" style="font-size:12px">Rebuilding re-flows text into pages. Hotspots you drew stay on the same page numbers.</p>
       <h4>${icon('wand', 14)} AI assistant</h4>
       <label class="field"><span>Ask Claude to change the document</span><textarea rows="2" data-ai placeholder="e.g. Add a chapter on budgeting with a quiz · Translate to Spanish · Make it shorter and punchier"></textarea></label>
-      <button class="btn" style="width:100%" data-aigo>${icon('spark', 16)} Apply with AI</button>
+      <button class="btn" style="width:100%" data-aigo>${icon('spark', 16)} Apply with AI</button><p class="faint" style="font-size:12px">No API key? It copies a prompt for the free Claude.ai chat instead.</p>
       <div class="ai-out" data-aiout hidden style="margin-top:10px;height:160px"></div>
       <h4>Block reference</h4><div class="md-help">${BLOCK_HELP.map(([a, b]) => `<div><code>${esc(a)}</code><br>${esc(b)}</div>`).join('')}</div>`;
     const rebuild = () => {
@@ -403,8 +403,15 @@ export async function openEditor(app, id) {
     P.querySelector('[data-rebuild]').onclick = rebuild;
     P.querySelector('[data-aigo]').onclick = async () => {
       const ai = await import('./ai.js'); const key = await ai.getKey();
-      if (!key) { toast('Add your Anthropic API key in Settings first', true); return; }
-      const ins = P.querySelector('[data-ai]').value.trim(); if (!ins) return;
+      const ins = P.querySelector('[data-ai]').value.trim(); if (!ins) return toast('Type what you want changed first', true);
+      if (!key) {
+        const text = ai.freeRevisePrompt(P.querySelector('[data-md]').value, ins);
+        try { await navigator.clipboard.writeText(text); } catch { /* clipboard blocked */ }
+        dialog(`<h2>Free mode — no API key</h2><p class="dlg-sub">The prompt is copied. Paste it into <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a> (or any AI chat), then paste the full answer below.</p><textarea class="input code" rows="12" data-ans placeholder="Paste the AI answer here…"></textarea><div class="dlg-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" data-ok>Apply &amp; rebuild</button></div>`, { wide: true });
+        const d = document.querySelector('.dlg:last-of-type');
+        d.querySelector('[data-ok]').onclick = () => { const md = ai.cleanPasted(d.querySelector('[data-ans]').value); if (md.length < 40) return toast('Paste the AI answer first', true); P.querySelector('[data-md]').value = md; d.remove(); rebuild(); };
+        return;
+      }
       const out = P.querySelector('[data-aiout]'); out.hidden = false; out.textContent = 'Thinking…';
       const btn = P.querySelector('[data-aigo]'); btn.disabled = true;
       try {
