@@ -1,0 +1,70 @@
+/* FlipForge page-flip engine styles */
+.ff-book { position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.ff-scroller { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; }
+.ff-book.ff-zoomed .ff-scroller { overflow: auto; place-items: start center; cursor: grab; }
+.ff-book.ff-zoomed .ff-scroller:active { cursor: grabbing; }
+.ff-stage { position: relative; perspective: 2600px; transform-style: preserve-3d; margin: 12px; flex: none; }
+.ff-book.ff-rtl .ff-stage { transform: scaleX(-1); }
+.ff-book.ff-rtl .ff-page > * { transform: scaleX(-1); }
+
+.ff-half { position: absolute; top: 0; width: var(--ff-pw); height: var(--ff-ph); }
+.ff-double .ff-left { left: 0; }
+.ff-double .ff-right { left: var(--ff-pw); }
+.ff-single .ff-right { left: 0; }
+.ff-half.ff-empty { pointer-events: none; }
+
+.ff-page { position: absolute; inset: 0; overflow: hidden; background: #fff; }
+.ff-page > img { width: 100%; height: 100%; object-fit: fill; display: block; pointer-events: none; -webkit-user-drag: none; }
+
+/* book body shadow */
+.ff-shadow { position: absolute; inset: 0; border-radius: 3px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.55), 0 12px 24px -12px rgba(0,0,0,.4); pointer-events: none; transition: left .4s, width .4s; }
+.ff-double.ff-cover-open .ff-shadow { left: var(--ff-pw); width: var(--ff-pw); }
+.ff-double.ff-back-open .ff-shadow { width: var(--ff-pw); }
+
+/* gutter shading on static pages */
+.ff-double .ff-left .ff-page::after, .ff-double .ff-right .ff-page::after,
+.ff-face .ff-page::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.ff-double .ff-left .ff-page::after { background: linear-gradient(to left, rgba(0,0,0,.22), rgba(0,0,0,.06) 4%, transparent 12%), linear-gradient(to right, rgba(255,255,255,.08), transparent 3%); }
+.ff-double .ff-right .ff-page::after { background: linear-gradient(to right, rgba(0,0,0,.22), rgba(0,0,0,.05) 4%, transparent 12%), linear-gradient(to left, rgba(255,255,255,.08), transparent 3%); }
+.ff-spine { position: absolute; top: 0; bottom: 0; left: calc(var(--ff-pw) - 1px); width: 2px; background: rgba(0,0,0,.18); pointer-events: none; display: none; }
+.ff-double:not(.ff-cover-open):not(.ff-back-open) .ff-spine { display: block; }
+
+/* the turning leaf */
+.ff-leaf { position: absolute; top: 0; height: var(--ff-ph); width: var(--ff-pw); left: var(--ff-pw); transform-origin: left center; transform-style: preserve-3d; will-change: transform; z-index: 5; }
+.ff-leaf[hidden] { display: none; }
+.ff-leaf.ff-leaf-single { left: 0; }
+.ff-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; background: #fff; }
+.ff-back { transform: rotateY(180deg); }
+.ff-leaf-single .ff-back { background: linear-gradient(to left, #e9e9e9, #fff); }
+.ff-front .ff-page::after { background: linear-gradient(to left, rgba(0,0,0, calc(var(--ff-p) * .45)), rgba(0,0,0, calc(var(--ff-p) * .12)) 40%, transparent 70%), linear-gradient(to right, rgba(0,0,0,.18), transparent 8%); }
+.ff-back .ff-page::after { background: linear-gradient(to right, rgba(0,0,0, calc((1 - var(--ff-p)) * .45)), rgba(0,0,0, calc((1 - var(--ff-p)) * .12)) 40%, transparent 70%), linear-gradient(to left, rgba(0,0,0,.18), transparent 8%); }
+.ff-leaf::before { /* cast shadow of the lifted leaf */
+  content: ""; position: absolute; inset: 0; transform: translateZ(-1px); pointer-events: none;
+  box-shadow: 0 0 calc(var(--ff-lift) * 40px) rgba(0,0,0, calc(var(--ff-lift) * .45)); }
+.ff-hardcover .ff-leaf-cover .ff-face { border-radius: 0 4px 4px 0; box-shadow: inset 0 0 0 3px rgba(0,0,0,.08); }
+.ff-hardcover .ff-shadow { box-shadow: 0 34px 70px -18px rgba(0,0,0,.65), 0 0 0 6px rgba(20,20,20,.55), 0 0 0 7px rgba(255,255,255,.08); }
+
+/* hover corner peel hint */
+.ff-corner { position: absolute; right: 0; bottom: 0; width: 0; height: 0; pointer-events: none; z-index: 6;
+  background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.08) 50%, #f4f4f4 56%, #d8d8d8 100%);
+  border-top-left-radius: 6px; box-shadow: -4px -4px 10px rgba(0,0,0,.18); transition: width .25s, height .25s; }
+.ff-stage:hover .ff-corner { width: 34px; height: 34px; }
+.ff-book.ff-back-open .ff-corner, .ff-book.ff-zoomed .ff-corner { display: none; }
+
+/* HTML (composed) pages are authored on an 800px-wide canvas and scaled */
+.ff-html { position: absolute; left: 0; top: 0; width: 800px; transform-origin: 0 0; transform: scale(var(--ff-scale)); }
+
+/* hotspots */
+.ff-hotspots { position: absolute; inset: 0; z-index: 3; }
+.ff-hotspot { position: absolute; cursor: pointer; border-radius: 6px; border: 0; padding: 0; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; transition: background .2s, box-shadow .2s; }
+.ff-hotspot:hover, .ff-hotspot:focus-visible { background: color-mix(in srgb, var(--ff-accent, #6d5efc) 18%, transparent); box-shadow: 0 0 0 2px var(--ff-accent, #6d5efc); }
+.ff-hotspot.ff-hs-pulse::after { content: ""; position: absolute; inset: -2px; border-radius: inherit; box-shadow: 0 0 0 2px var(--ff-accent, #6d5efc); animation: ff-pulse 2.2s infinite; pointer-events: none; }
+.ff-highlight-links .ff-hotspot { background: color-mix(in srgb, var(--ff-accent, #6d5efc) 14%, transparent); }
+@keyframes ff-pulse { 0% { opacity: .9; transform: scale(1); } 70% { opacity: 0; transform: scale(1.08); } 100% { opacity: 0; } }
+.ff-hs-badge { position: absolute; right: 4px; top: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--ff-accent, #6d5efc); color: #fff; display: grid; place-items: center; font: 600 12px/1 system-ui; box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none; }
+.ff-hs-inline { position: absolute; overflow: hidden; border-radius: 4px; background: #000; }
+.ff-hs-inline iframe, .ff-hs-inline video, .ff-hs-inline img { width: 100%; height: 100%; border: 0; display: block; object-fit: cover; }
+.ff-search-hit { position: absolute; background: rgba(255, 214, 0, .45); mix-blend-mode: multiply; border-radius: 2px; pointer-events: none; z-index: 2; }
+
+.ff-ghost { pointer-events: none; z-index: 20; }
+@media (prefers-reduced-motion: reduce) { .ff-hotspot.ff-hs-pulse::after { animation: none; } }

@@ -1,0 +1,15 @@
+{
+  "name": "flipforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FlipForge Studio - create interactive flipbooks, ebooks, magazines and catalogs in the browser.",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild js/runtime-entry.js --bundle --format=iife --minify --target=es2020 --outfile=dist/viewer-runtime.js && node scripts/build-css.mjs",
+    "start": "npx --yes http-server -p 8080 -c-1 .",
+    "test": "node tests/e2e.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

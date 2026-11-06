@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../css/flipbook.css"><link rel="stylesheet" href="../css/themes.css"><link rel="stylesheet" href="../css/viewer.css">
+<style>html,body{margin:0;height:100%}#app{position:fixed;inset:0}</style></head><body><div id="app"></div>
+<script type="module">
+import { compose } from '../js/composer.js';
+import { TEMPLATES } from '../js/templates.js';
+import { mountViewer } from '../js/viewer.js';
+import { newBook } from '../js/db.js';
+const t = TEMPLATES.find(x => x.id === (new URLSearchParams(location.search).get('t') || 'ebook'));
+const aspect = { a4: .7071, letter: .7727, square: 1, landscape: 1.4142, pocket: .65 }[t.size];
+const r = compose(t.md, { theme: t.theme, aspect });
+const book = newBook({ title: r.meta.title, type: t.type, aspect });
+book.pages = r.pages; book.settings.toc = r.toc;
+book.hotspots = [{ id: 'h1', page: 2, x: .1, y: .1, w: .3, h: .1, type: 'note', data: { title: 'Hi', text: 'A note' }, style: { pulse: true } },
+ { id: 'h2', page: 2, x: .5, y: .8, w: .4, h: .06, type: 'text', data: { text: 'Overlay text' }, style: { color: '#e63946', size: 30, anim: 'bounce' } }];
+window.v = await mountViewer(document.getElementById('app'), book, { mode: 'preview' });
+window.pages = r.pages.length; window.errors = window.errors || [];
+document.title = 'ready';
+</script></body></html>

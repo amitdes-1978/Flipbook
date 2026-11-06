@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FlipForge Reader</title>
+<meta name="description" content="Interactive flipbook">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700&family=Lora:wght@400;600&family=Bebas+Neue&family=Fraunces:wght@600;700&family=Baloo+2:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/flipbook.css">
+<link rel="stylesheet" href="css/themes.css">
+<link rel="stylesheet" href="css/viewer.css">
+<style>html,body{margin:0;height:100%;background:#0d0f1a}#app{position:fixed;inset:0}.boot{position:fixed;inset:0;display:grid;place-items:center;color:#9aa0b8;font:15px system-ui}.boot a{color:#8b7dff}</style>
+</head>
+<body>
+<div id="app"><div class="boot">Loading publication…</div></div>
+<script type="module">
+import { db } from './js/db.js';
+import { mountViewer } from './js/viewer.js';
+import { qrSvg } from './vendor/qr.mjs';
+const qs = new URLSearchParams(location.search);
+const id = qs.get('id');
+const app = document.getElementById('app');
+const book = id && await db.getBook(id).catch(() => null);
+if (!book) {
+  app.innerHTML = '<div class="boot"><div>Publication not found in this browser. <a href="studio.html">Open the studio</a></div></div>';
+} else {
+  document.title = book.title + ' · FlipForge';
+  const urls = new Map();
+  await mountViewer(app, book, {
+    mode: qs.get('preview') ? 'preview' : 'live',
+    embed: qs.get('embed') === '1',
+    assetUrl: async (k) => { if (!urls.has(k)) { const b = await db.getBlob(k); urls.set(k, b ? URL.createObjectURL(b) : null); } return urls.get(k); },
+    onEvent: (ev) => db.addEvent(ev).catch(() => {}),
+    onLead: (lead) => db.addLead(lead).catch(() => {}),
+    qr: (u) => qrSvg(u),
+  });
+}
+</script>
+</body>
+</html>
