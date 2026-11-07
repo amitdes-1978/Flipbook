@@ -21,6 +21,17 @@ function sanitize(html) {
 function parsePrice(p) { const n = parseFloat(String(p || '').replace(/[^0-9.,-]/g, '').replace(/,(?=\d{3}\b)/g, '').replace(',', '.')); return isNaN(n) ? 0 : n; }
 function currencyOf(p) { const m = String(p || '').match(/^[^\d\s.,-]+|[^\d\s.,-]+$/); return m ? m[0] : ''; }
 
+function fileDownload(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function makeIcs(d) {
+  const fmt = (v) => { const t = new Date(String(v || '').replace(' ', 'T')); return isNaN(t) ? '' : t.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+  const start = fmt(d.start), end = fmt(d.end) || (start && fmt(new Date(Date.parse(String(d.start).replace(' ', 'T')) + 3 * 3600e3).toISOString()));
+  const clean = (x) => String(x || '').replace(/[,;\\]/g, (c) => '\\' + c).replace(/\n/g, ' ');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FlipForge//EN', 'BEGIN:VEVENT', 'UID:' + Date.now() + '@flipforge', 'DTSTAMP:' + fmt(new Date().toISOString()), start && 'DTSTART:' + start, end && 'DTEND:' + end, 'SUMMARY:' + clean(d.title), d.loc && 'LOCATION:' + clean(d.loc), 'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n');
+}
+
 export async function mountViewer(root, book, opts = {}) {
   const S = book.settings;
   const T = S.tools || {};
@@ -174,6 +185,17 @@ export async function mountViewer(root, book, opts = {}) {
   }
 
   function wireHtml(h, page) {
+    h.addEventListener('submit', (e) => {
+      const f = e.target.closest('[data-rsvp]'); if (!f) return;
+      e.preventDefault(); e.stopPropagation();
+      const data = Object.fromEntries(new FormData(f).entries());
+      const lead = { book: book.id, type: 'rsvp', ...data, page };
+      opts.onLead && opts.onLead(lead); emit('rsvp', { page, attending: data.attending }); hook({ type: 'rsvp', ...data });
+      f.classList.add('sent'); f.querySelector('.fx-rsvp-done').hidden = false;
+      const text = `RSVP for “${book.title}”\nName: ${data.name}\nReply: ${data.attending}\nGuests: ${data.guests}${data.message ? '\nMessage: ' + data.message : ''}`;
+      if (f.dataset.wa) window.open(`https://wa.me/${f.dataset.wa.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      else if (f.dataset.email) location.href = `mailto:${f.dataset.email}?subject=${encodeURIComponent('RSVP: ' + book.title)}&body=${encodeURIComponent(text)}`;
+    });
     h.addEventListener('click', (e) => {
       const g = e.target.closest('[data-goto]');
       if (g) { e.preventDefault(); e.stopPropagation(); go(parseInt(g.dataset.goto, 10)); return; }
@@ -209,6 +231,13 @@ export async function mountViewer(root, book, opts = {}) {
         imgs.forEach((x, j) => x.classList.toggle('on', j === k)); dots.forEach((x, j) => x.classList.toggle('on', j === k));
         return;
       }
+      const vc = e.target.closest('[data-vcard]');
+      if (vc) { e.stopPropagation(); fileDownload((vc.dataset.name || 'contact').replace(/[^\w-]+/g, '_') + '.vcf', vc.dataset.vcard.replace(/\n/g, '\r\n'), 'text/vcard'); emit('click', { kind: 'save-contact', page }); toast('Contact card downloaded — open it to add to your phone'); return; }
+      const ic = e.target.closest('[data-ics]');
+      if (ic) { e.stopPropagation(); fileDownload((ic.dataset.title || 'event').replace(/[^\w-]+/g, '_') + '.ics', makeIcs(ic.dataset), 'text/calendar'); emit('click', { kind: 'calendar', page }); return; }
+      const ph = e.target.closest('[data-photos] img');
+      if (ph) { e.stopPropagation(); const all = [...ph.parentNode.querySelectorAll('img')]; openGallery(all.map(x => x.src), all.indexOf(ph)); return; }
+      if (e.target.closest('[data-rsvp]')) { e.stopPropagation(); return; }
       const a = e.target.closest('a[href]');
       if (a) { e.stopPropagation(); emit('click', { kind: 'link', page, url: a.href }); }
     });
@@ -556,6 +585,13 @@ export async function mountViewer(root, book, opts = {}) {
   if (root.querySelector('[data-act=sound]')) root.querySelector('[data-act=sound]').innerHTML = icon(soundOn ? 'sound' : 'mute');
   if (S.music?.autoplay) { const once = () => { toggleMusic(true); window.removeEventListener('pointerdown', once); }; window.addEventListener('pointerdown', once); }
 
+  const tick = () => root.querySelectorAll('[data-countdown]').forEach(el => {
+    const t = +el.dataset.countdown; if (!t) return;
+    let d = Math.max(0, t - Date.now()); const v = [864e5, 36e5, 6e4, 1e3].map(u => { const n = Math.floor(d / u); d -= n * u; return n; });
+    el.querySelectorAll('b').forEach((b, i) => { b.textContent = String(v[i]).padStart(i ? 2 : 1, '0'); });
+  });
+  const ticker = setInterval(tick, 1000); tick();
+
   /* ---------- controls ---------- */
   const range = $('.fv-range');
   range.addEventListener('input', () => { $('.fv-cur').textContent = range.value; });
@@ -625,7 +661,7 @@ export async function mountViewer(root, book, opts = {}) {
   return {
     fb,
     goTo: (i) => fb.goTo(i),
-    destroy() { document.removeEventListener('visibilitychange', onHide); speechSynthesis?.cancel?.(); music?.pause(); stopAuto(); fb.destroy(); root.innerHTML = ''; },
+    destroy() { clearInterval(ticker); document.removeEventListener('visibilitychange', onHide); speechSynthesis?.cancel?.(); music?.pause(); stopAuto(); fb.destroy(); root.innerHTML = ''; },
     stats: () => ({ ...session, ms: Date.now() - session.start }),
   };
 }

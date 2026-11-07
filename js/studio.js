@@ -149,6 +149,9 @@ function createView() {
         <button class="create-card hot" data-c="ai"><div class="cc-ico">${icon('wand')}</div><h3>Generate with AI</h3><p>Describe a topic — AI writes a complete interactive ebook, course, report or magazine. Free mode needs no API key.</p></button>
         <button class="create-card" data-c="tpl"><div class="cc-ico">${icon('grid')}</div><h3>Start from a template</h3><p>${TEMPLATES.length} designed starters: ebook, magazine, catalog, menu, report, course…</p></button>
         <button class="create-card" data-c="write"><div class="cc-ico">${icon('edit')}</div><h3>Write from scratch</h3><p>Type or paste text; pages, typography and contents are laid out for you.</p></button>
+        <button class="create-card" data-c="album"><div class="cc-ico">${icon('gallery')}</div><h3>Wedding / photo album</h3><p>Choose your photos — elegant collage pages, cover with names & date, tap to enlarge.</p></button>
+        <button class="create-card" data-c="vcard"><div class="cc-ico">${icon('users')}</div><h3>Digital visiting card</h3><p>Flip card with call, WhatsApp, email, map, save-contact and QR code.</p></button>
+        <button class="create-card" data-c="invite"><div class="cc-ico">${icon('spark')}</div><h3>Invitation card</h3><p>Wedding, birthday or event — countdown, RSVP, map and add-to-calendar.</p></button>
         <button class="create-card" data-c="images"><div class="cc-ico">${icon('image')}</div><h3>Photo book / scans</h3><p>Turn JPG, PNG or WebP images into a page-flip album or portfolio.</p></button>
         <button class="create-card" data-c="csv"><div class="cc-ico">${icon('product')}</div><h3>Catalog from spreadsheet</h3><p>Import a CSV of products and get a shoppable catalog with cart & ordering.</p></button>
         <button class="create-card" data-c="doc"><div class="cc-ico">${icon('page')}</div><h3>Text / Markdown / HTML file</h3><p>Import .txt, .md or .html documents and typeset them as a book.</p></button>
@@ -157,7 +160,7 @@ function createView() {
     </div>`);
   main.addEventListener('click', (e) => {
     const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-    ({ pdf: pdfFlow, ai: aiFlow, tpl: () => location.hash = '#/templates', write: () => writeFlow(), images: imagesFlow, csv: csvFlow, doc: docFlow, import: async () => { const [f] = await pickFiles({ accept: '.json' }); if (f) { const b = await importProject(await readFileText(f)); location.hash = '#/edit/' + b.id; } } })[c]();
+    ({ album: albumFlow, vcard: () => fromTemplate('vcard'), invite: inviteFlow, pdf: pdfFlow, ai: aiFlow, tpl: () => location.hash = '#/templates', write: () => writeFlow(), images: imagesFlow, csv: csvFlow, doc: docFlow, import: async () => { const [f] = await pickFiles({ accept: '.json' }); if (f) { const b = await importProject(await readFileText(f)); location.hash = '#/edit/' + b.id; } } })[c]();
   });
 }
 
@@ -194,6 +197,70 @@ async function pdfFlow(files) {
       toast(`Created ${made.length} flipbook${made.length > 1 ? 's' : ''}`);
       location.hash = made.length === 1 ? '#/edit/' + made[0].id : '#/';
     } catch (e) { if (e.name !== 'AbortError') { console.error(e); toast('Conversion failed: ' + e.message, true); close(); } }
+  };
+}
+
+async function fromTemplate(id, theme) {
+  const t = TEMPLATES.find(x => x.id === id);
+  const b = await composedBook({ md: t.md, theme: theme || t.theme, size: t.size, type: t.type });
+  toast('Created — edit the text in the Content tab'); location.hash = '#/edit/' + b.id;
+}
+function inviteFlow() {
+  const list = TEMPLATES.filter(t => t.type === 'invitation');
+  const { el, close } = dialog(`<h2>Invitation card</h2><p class="dlg-sub">Pick a style. You can change every word, the theme, colours and photos afterwards.</p>
+    <div class="tpl-grid">${list.map(t => `<button class="tpl" data-id="${t.id}"><div class="tp"><div class="cv" style="--a:${SIZES.find(z => z.id === t.size).aspect}"></div></div><div class="tm"><b>${t.icon} ${esc(t.name)}</b><span>${esc(t.blurb)}</span></div></button>`).join('')}</div>`, { wide: true });
+  el.querySelectorAll('.tpl').forEach(btn => {
+    const t = list.find(x => x.id === btn.dataset.id);
+    pagePreview(btn.querySelector('.cv'), compose(t.md.split('\n---')[0], { theme: t.theme, aspect: SIZES.find(z => z.id === t.size).aspect, toc: false, back: false }).pages[0]);
+    btn.onclick = () => { close(); fromTemplate(t.id); };
+  });
+}
+
+function downscale(file, max = 1800, q = 0.84) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const im = new Image();
+    im.onload = () => { const s = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', q)); };
+    im.onerror = rej; im.src = url;
+  });
+}
+async function albumFlow() {
+  const { el, close } = dialog(`<h2>Wedding / photo album</h2><p class="dlg-sub">Choose photos in the order you want them (they're sorted by file name). Photos stay on your device.</p>
+    <div class="row wrap" style="margin-bottom:14px"><button class="btn primary" data-pick>${icon('image', 16)} Choose photos</button><span class="muted" data-count>No photos selected</span></div>
+    <div class="thumbs-strip" data-thumbs style="margin-bottom:14px"></div>
+    <div class="grid2">
+      <label class="field"><span>Name 1</span><input data-n1 value="Rohan"></label><label class="field"><span>Name 2 (leave empty for a single title)</span><input data-n2 value="Meera"></label>
+      <label class="field"><span>Date / subtitle</span><input data-date value="Our wedding · 14 February 2026"></label><label class="field"><span>Place</span><input data-place value="Udaipur, India"></label>
+      <label class="field"><span>Theme</span><select data-theme>${THEMES.map(t => `<option value="${t.id}" ${t.id === 'romance' ? 'selected' : ''}>${t.name}</option>`).join('')}</select></label>
+      <label class="field"><span>Photos per page</span><select data-per><option value="mix" selected>Mixed collage (1–4)</option><option value="1">1 — full page</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+      <label class="field"><span>Page shape</span><select data-size><option value="photo">Landscape 4:3</option><option value="square">Square</option><option value="a4">Portrait</option></select></label>
+      <label class="field"><span>Closing message</span><input data-end value="Thank you for being part of our story."></label>
+    </div>
+    <div class="progress" hidden><i></i></div>
+    <div class="dlg-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" data-go disabled>Create album</button></div>`, { wide: true });
+  let files = [];
+  el.querySelector('[data-pick]').onclick = async () => {
+    files = (await pickFiles({ accept: 'image/*', multiple: true })).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    el.querySelector('[data-count]').textContent = `${files.length} photo${files.length === 1 ? '' : 's'} selected`;
+    const th = el.querySelector('[data-thumbs]'); th.innerHTML = '';
+    files.slice(0, 40).forEach(f => { const i = new Image(); i.src = URL.createObjectURL(f); th.appendChild(i); });
+    el.querySelector('[data-go]').disabled = !files.length;
+  };
+  el.querySelector('[data-go]').onclick = async () => {
+    const v = (k) => el.querySelector(k).value.replace(/\|/g, '/');
+    const go = el.querySelector('[data-go]'); go.disabled = true; go.textContent = 'Preparing photos…';
+    const bar = el.querySelector('.progress'); bar.hidden = false;
+    const urls = [];
+    for (const [i, f] of files.entries()) { urls.push(await downscale(f)); bar.querySelector('i').style.width = ((i + 1) / files.length * 100) + '%'; }
+    const per = v('[data-per]'); const pattern = [3, 1, 4, 2, 3, 1, 2, 4];
+    const groups = []; let k = 0, p = 0;
+    while (k < urls.length) { const n = per === 'mix' ? pattern[p++ % pattern.length] : +per; groups.push(urls.slice(k, k + n)); k += n; }
+    const n1 = v('[data-n1]'), n2 = v('[data-n2]');
+    const title = n2 ? `${n1} & ${n2}` : n1;
+    const md = [`title: ${title}`, `subtitle: ${v('[data-date]')}`, `author: ${v('[data-place]')}`, `kicker: ${n2 ? 'Wedding album' : 'Photo album'}`, `cover: ${urls[0]}`, 'toc: none', 'backtitle: With love', `backtext: ${v('[data-end]')}`, '',
+      n2 ? `@names ${n1} | ${n2} | ${v('[data-date]')}` : `## ${title}`, '', ...groups.flatMap(g => ['---', '', '@photos ' + g.join(', '), ''])].join('\n');
+    const b = await composedBook({ md, theme: v('[data-theme]'), size: v('[data-size]'), type: 'album', title });
+    b.settings.hardcover = true; b.settings.music = { ...b.settings.music };
+    await db.saveBook(b); close(); toast('Album ready — add background music in the Design tab 🎵'); location.hash = '#/edit/' + b.id;
   };
 }
 

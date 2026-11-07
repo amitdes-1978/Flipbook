@@ -1,6 +1,6 @@
 # FlipForge Studio
 
-Create **interactive, trackable digital publications**: ebooks, magazines, product catalogs, brochures, reports, proposals, menus, courses, newsletters, portfolios, cookbooks and photo books. You can start from a PDF, a template, a spreadsheet or plain text, or have AI write the whole thing.
+Create **interactive, trackable digital publications**: ebooks, magazines, product catalogs, brochures, reports, proposals, menus, courses, newsletters, portfolios, cookbooks, **digital visiting cards, wedding / birthday / event invitations and wedding & photo albums**. You can start from a PDF, a template, a spreadsheet or plain text, or have AI write the whole thing.
 
 It runs entirely in the browser. While you edit, nothing is uploaded. When you publish, you get one self-contained HTML file that you can host anywhere.
 
@@ -27,10 +27,13 @@ Then open http://localhost:8080. Opening the files directly with `file://` doesn
 |---|---|
 | **PDF (single or batch)** | Pages rendered at Standard, High or Ultra quality. Text is extracted for search and read-aloud. **Links, internal page jumps and the outline become hotspots and a table of contents automatically.** |
 | **AI writer** | **Free mode:** FlipForge builds a prompt, you paste it into the free Claude.ai chat (or any AI chat) and paste the answer back — no API key. **Automatic mode:** with your own Anthropic API key. Describe a topic, audience, tone and length; optionally paste source notes. Claude writes a complete publication with chapters, quizzes, charts, stats and CTAs, and FlipForge lays it out. There's also an in-editor AI assistant ("add a chapter on…", "translate to Spanish"). |
-| **Templates** | 12 designed starters × 9 typographic themes (Aurora, Classic, Editorial, Minimal, Noir, Corporate, Fresh, Playful, Luxe) × 6 page sizes. |
+| **Templates** | 17 designed starters × 12 typographic themes (Aurora, Classic, Editorial, Minimal, Noir, Corporate, Fresh, Playful, Luxe, Romance, Royal, Festive) × 9 page sizes (including visiting card, 5×7 invitation and 4:3 album). |
 | **Write / Markdown / TXT / HTML** | Text is typeset automatically: pagination, chapter openers, drop caps, folios, table of contents, cover and back cover. |
 | **CSV spreadsheet** | Builds a shoppable product catalog (sections from the `category` column). |
 | **Images** | Photo book, portfolio or scanned pages. |
+| **Wedding / photo album builder** | Pick your photos; FlipForge builds a cover with names and date plus collage pages (mixed 1–4, or a fixed number per page). Tap any photo to enlarge it. |
+| **Visiting card** | A front/back flip card with Call, WhatsApp, Email, Website, Directions, **Save contact (.vcf)**, social links and a QR code. |
+| **Invitations** | Wedding, birthday and event styles with a live **countdown**, an **RSVP form** (saved to Leads and sent to WhatsApp or email), a venue **map** and **Add to calendar (.ics)**. |
 | **Project backup** | Re-import `.flipforge.json` files. |
 
 ### Interactivity (drawn as hotspots on any page, PDF or composed)

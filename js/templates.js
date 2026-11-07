@@ -331,6 +331,157 @@ kicker: Cookbook
 `,
   },
   {
+    id: 'vcard', type: 'card', name: 'Digital visiting card', icon: '💳', theme: 'aurora', size: 'card',
+    blurb: 'Tap to call, WhatsApp, save contact, QR',
+    md: `title: Priya Sharma
+subtitle: Founder & Creative Director · Bright Pixel Studio
+author: brightpixel.example
+kicker: Hello, I'm
+toc: none
+back: none
+folio: none
+
+## Let's connect
+@contact Priya Sharma | Founder, Bright Pixel Studio | +91 98765 43210 | priya@example.com | https://example.com | MG Road, Bengaluru
+
+---
+
+@social instagram:https://instagram.com/, linkedin:https://linkedin.com/, web:https://example.com
+
+@qr https://example.com | Scan to visit my portfolio
+`,
+  },
+  {
+    id: 'wedding', type: 'invitation', name: 'Wedding invitation', icon: '💍', theme: 'royal', size: 'invite',
+    blurb: 'Countdown, RSVP, venue map, add to calendar',
+    md: `title: Aarav & Diya
+subtitle: Together with their families, request the pleasure of your company
+author: 12 December 2026 · Jaipur
+kicker: Wedding invitation
+toc: none
+folio: none
+backtitle: With love & blessings
+backtext: Your presence is the greatest gift. We can't wait to celebrate with you.
+
+@names Aarav | Diya | Saturday · 12 December 2026
+
+@countdown 2026-12-12 18:00 | until we say “I do”
+
+@center With the blessings of our elders, we invite you to celebrate our wedding at **The Leela Palace, Jaipur**.
+
+---
+
+## Celebrations
+@menu Mehendi | 10 Dec · 4 PM | Garden Terrace — wear something green
+@menu Sangeet | 11 Dec · 7 PM | Grand Ballroom — music, dance & dinner
+@menu Wedding ceremony | 12 Dec · 6 PM | Palace Lawns
+@menu Reception | 12 Dec · 9 PM | Durbar Hall
+
+@calendar Wedding of Aarav & Diya | 2026-12-12 18:00 | 2026-12-12 23:30 | The Leela Palace, Jaipur
+
+---
+
+## Venue
+@map The Leela Palace Jaipur | The Leela Palace, Jaipur
+
+## Kindly reply
+@rsvp Will you celebrate with us? | whatsapp:+919876543210
+`,
+  },
+  {
+    id: 'birthday', type: 'invitation', name: 'Birthday invitation', icon: '🎂', theme: 'festive', size: 'invite',
+    blurb: 'Party details, countdown & RSVP',
+    md: `title: Mia turns 7!
+subtitle: Join us for cake, games and lots of fun
+author: Sunday · 20 December 2026 · 4 PM
+kicker: You're invited
+toc: none
+folio: none
+backtitle: See you there! 🎈
+backtext: Questions? Call Mom on +1 555 010 2020.
+
+@countdown 2026-12-20 16:00 | until the party starts!
+
+## Party plan
+- 🎨 Face painting & crafts
+- 🎪 Magic show at 5 PM
+- 🍕 Pizza, cake & ice cream
+
+@calendar Mia's 7th birthday party | 2026-12-20 16:00 | 2026-12-20 19:00 | 21 Maple Street
+
+---
+
+## Where
+@map 21 Maple Street, Springfield | 21 Maple Street
+
+@rsvp Can you come? | email:parents@example.com
+`,
+  },
+  {
+    id: 'event', type: 'invitation', name: 'Event / launch invitation', icon: '🎟️', theme: 'noir', size: 'invite',
+    blurb: 'Corporate event, agenda, RSVP',
+    md: `title: Launch Night 2026
+subtitle: Be the first to experience what we've been building
+author: 15 January 2027 · 7 PM · Mumbai
+kicker: Exclusive invitation
+toc: none
+folio: none
+backtitle: Limited seats
+backtext: Please RSVP by 8 January.
+cta: Visit our website | https://example.com
+
+@countdown 2027-01-15 19:00 | until doors open
+
+## Agenda
+@menu Welcome drinks | 7:00 PM
+@menu Keynote & live demo | 7:45 PM
+@menu Dinner & networking | 8:30 PM
+
+@calendar Launch Night 2026 | 2027-01-15 19:00 | 2027-01-15 22:30 | Jio World Centre, Mumbai
+
+---
+
+@map Jio World Centre, Mumbai | Jio World Centre, BKC
+
+@rsvp Will you attend? | email:events@example.com
+`,
+  },
+  {
+    id: 'album', type: 'album', name: 'Wedding / photo album', icon: '📸', theme: 'romance', size: 'photo',
+    blurb: 'Collage pages, tap to enlarge — or build from your photos',
+    md: `title: Rohan & Meera
+subtitle: Our wedding · 14 February 2026
+author: Udaipur, India
+kicker: Wedding album
+cover: art:wedding-sunset
+toc: none
+backtitle: Forever begins now
+backtext: Thank you for being part of our story.
+
+@names Rohan | Meera | 14 · 02 · 2026
+
+---
+
+@photos art:haldi-1, art:haldi-2, art:haldi-3
+
+---
+
+@photos art:mehendi-1, art:mehendi-2, art:mehendi-3, art:mehendi-4
+
+---
+
+@photos art:ceremony-1
+
+---
+
+@photos art:pheras-1, art:pheras-2
+
+---
+
+@photos art:family-1, art:family-2, art:family-3, art:family-4, art:family-5
+`,
+  },
+  {
     id: 'blank', type: 'ebook', name: 'Blank document', icon: '📄', theme: 'aurora', size: 'a4',
     blurb: 'Start from scratch',
     md: `title: My Publication
@@ -361,5 +512,15 @@ export const BLOCK_HELP = [
   ['@product Name | $Price | image | desc | url | sku', 'Product card with add-to-cart'],
   ['@menu Dish | Price | description', 'Menu line with dotted leader'],
   ['@button Label | URL', 'Call-to-action button'],
-  ['Front matter (top lines)', 'title:, subtitle:, author:, kicker:, cover:, theme:, cta: Label | URL'],
+  ['@contact Name | Title | phone | email | website | address', 'Call, WhatsApp, email, map and Save-contact buttons'],
+  ['@social instagram:URL, linkedin:URL', 'Social profile buttons'],
+  ['@qr URL | caption', 'QR code'],
+  ['@names Name | Name | date', 'Couple names in script lettering'],
+  ['@countdown 2026-12-12 18:00 | label', 'Live countdown timer'],
+  ['@calendar Title | start | end | place', 'Add-to-calendar button (.ics)'],
+  ['@map Address | label', 'Embedded map + directions link'],
+  ['@rsvp Question | whatsapp:+91… or email:…', 'RSVP form (saved to Leads, sent to WhatsApp/email)'],
+  ['@photos url1, url2, …', 'Full-page photo collage (1–6), tap to enlarge'],
+  ['@center text', 'Centered text'],
+  ['Front matter (top lines)', 'title:, subtitle:, author:, kicker:, cover:, theme:, cta: Label | URL, toc: none, back: none, folio: none, backtitle:, backtext:'],
 ];

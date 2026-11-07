@@ -2,7 +2,7 @@
 import { db, collectBlobKeys } from './db.js';
 import { esc } from './util.js';
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700&family=Lora:wght@400;600&family=Bebas+Neue&family=Fraunces:wght@600;700&family=Baloo+2:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Montserrat:wght@400;600&display=swap';
+const FONTS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700&family=Lora:wght@400;600&family=Bebas+Neue&family=Fraunces:wght@600;700&family=Baloo+2:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Montserrat:wght@400;600&family=Great+Vibes&family=Cinzel:wght@500;700&display=swap';
 
 const blobToDataUrl = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 const safeJson = (o) => JSON.stringify(o).replace(/</g, '\\u003c').replace(/[\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16));

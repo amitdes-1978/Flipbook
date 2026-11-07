@@ -1,6 +1,7 @@
 // Composer: turns lightweight markdown (+ interactive "@blocks") into designed, paginated HTML pages.
 import { uid } from './db.js';
 import { esc, videoEmbed } from './util.js';
+import { qrSvg } from '../vendor/qr.mjs';
 export { esc, videoEmbed };
 
 export const THEMES = [
@@ -13,6 +14,9 @@ export const THEMES = [
   { id: 'fresh', name: 'Fresh', desc: 'Organic greens' },
   { id: 'playful', name: 'Playful', desc: 'Kids & education' },
   { id: 'luxe', name: 'Luxe', desc: 'Premium catalogs & menus' },
+  { id: 'romance', name: 'Romance', desc: 'Weddings, blush & script' },
+  { id: 'royal', name: 'Royal', desc: 'Maroon & gold celebrations' },
+  { id: 'festive', name: 'Festive', desc: 'Birthdays & parties' },
 ];
 
 export const SIZES = [
@@ -22,6 +26,9 @@ export const SIZES = [
   { id: 'landscape', name: 'Landscape', aspect: 1.4142 },
   { id: 'story', name: 'Mobile story 9:16', aspect: 0.5625 },
   { id: 'pocket', name: 'Pocket book', aspect: 0.65 },
+  { id: 'card', name: 'Visiting card 3.5×2', aspect: 1.75 },
+  { id: 'invite', name: 'Invitation 5×7', aspect: 0.714 },
+  { id: 'photo', name: 'Photo album landscape 4:3', aspect: 1.3333 },
 ];
 
 /* ---------------- helpers ---------------- */
@@ -52,6 +59,7 @@ export function art(seed = 'x', label = '', palette) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><filter id="b"><feGaussianBlur stdDeviation="40"/></filter><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p[2]}"/><stop offset="1" stop-color="${p[0]}"/></linearGradient></defs><rect width="800" height="600" fill="url(#g)"/><g filter="url(#b)">${shapes}</g>${label ? `<text x="40" y="560" font-family="system-ui,sans-serif" font-size="34" font-weight="700" fill="rgba(255,255,255,.85)">${esc(label)}</text>` : ''}</svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
+const splitUrls = (args) => args.join(',').split(/,\s*(?=data:|https?:|art:|blob:)/).map(x => x.trim()).filter(Boolean);
 const img = (u, seed) => safeUrl(u) || art(seed || u || 'img');
 
 
@@ -148,11 +156,44 @@ export function blockHtml(b, ctx = {}) {
     case '@products': return `<div class="fx-products ${A}">${b.items.map(productHtml).join('')}</div>`;
     case '@product': return `<div class="fx-products ${A}">${productHtml(productFromArgs(b.args))}</div>`;
     case '@gallery': {
-      const urls = b.args.join(',').split(',').map(s => s.trim()).filter(Boolean);
+      const urls = splitUrls(b.args);
       return `<div class="fx-gallery ${A}" data-interactive data-gallery>${urls.map((u, i) => `<img src="${esc(img(u, 'g' + i + u))}" class="${i ? '' : 'on'}" alt="">`).join('')}<button class="fx-garrow l" type="button" aria-label="Previous">‹</button><button class="fx-garrow r" type="button" aria-label="Next">›</button><div class="fx-gnav">${urls.map((_, i) => `<button type="button" class="${i ? '' : 'on'}" aria-label="Slide ${i + 1}"></button>`).join('')}</div></div>`;
     }
     case '@menu': { const [name, price, desc] = b.args; return `<div class="${A}"><div class="fx-menu-item"><b>${esc(name)}</b><i></i><span>${esc(price || '')}</span></div>${desc ? `<div class="fx-menu-desc">${esc(desc)}</div>` : ''}</div>`; }
     case '@spacer': return `<div style="height:${parseInt(b.args[0]) || 40}px"></div>`;
+    case '@contact': {
+      const [name, title, phone, email, web, address, whatsapp] = b.args;
+      const tel = String(phone || '').replace(/[^\d+]/g, ''), wa = String(whatsapp || phone || '').replace(/\D/g, '');
+      const vc = ['BEGIN:VCARD', 'VERSION:3.0', `FN:${name || ''}`, title ? `TITLE:${title}` : '', tel ? `TEL;TYPE=CELL:${tel}` : '', email ? `EMAIL:${email}` : '', web ? `URL:${web}` : '', address ? `ADR:;;${address};;;;` : '', 'END:VCARD'].filter(Boolean).join('\n');
+      const btn = (href, label, ic) => `<a class="fx-cbtn" data-interactive href="${esc(href)}" target="_blank" rel="noopener"><span>${ic}</span>${esc(label)}</a>`;
+      return `<div class="fx-contact ${A}">${tel ? btn('tel:' + tel, 'Call', '📞') : ''}${wa ? btn('https://wa.me/' + wa, 'WhatsApp', '💬') : ''}${email ? btn('mailto:' + email, 'Email', '✉️') : ''}${web ? btn(web, 'Website', '🌐') : ''}${address ? btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address), 'Directions', '📍') : ''}<button type="button" class="fx-cbtn fx-save" data-interactive data-vcard="${esc(vc)}" data-name="${esc(name || 'contact')}"><span>👤</span>Save contact</button></div>`;
+    }
+    case '@social': {
+      const icons = { instagram: '📸', facebook: '👍', linkedin: '💼', x: '✖️', twitter: '✖️', youtube: '▶️', tiktok: '🎵', pinterest: '📌', github: '🐙', web: '🌐', telegram: '✈️' };
+      return `<div class="fx-social ${A}">${b.args.join(',').split(',').map(x => x.trim()).filter(Boolean).map(x => { const k = x.indexOf(':'); const net = x.slice(0, k).toLowerCase(), url = x.slice(k + 1).trim(); return /^https?:/.test(url) ? `<a data-interactive href="${esc(url)}" target="_blank" rel="noopener" title="${esc(net)}">${icons[net] || '🔗'} <span>${esc(net)}</span></a>` : ''; }).join('')}</div>`;
+    }
+    case '@qr': { const [url, cap] = b.args; if (!url) return ''; return `<div class="fx-qr ${A}">${qrSvg(url, 4)}${cap ? `<span>${esc(cap)}</span>` : ''}</div>`; }
+    case '@countdown': { const [when, label] = b.args; const t = Date.parse(String(when || '').replace(' ', 'T')); return `<div class="fx-countdown ${A}" data-countdown="${isNaN(t) ? '' : t}">${['Days', 'Hours', 'Minutes', 'Seconds'].map(u => `<div><b>--</b><span>${u}</span></div>`).join('')}${label ? `<p>${esc(label)}</p>` : ''}</div>`; }
+    case '@calendar': {
+      const [title, start, end, location] = b.args;
+      return `<p class="${A}"><button type="button" class="fx-btn" data-interactive data-ics="1" data-title="${esc(title)}" data-start="${esc(start)}" data-end="${esc(end || '')}" data-loc="${esc(location || '')}">📅 Add to calendar</button></p>`;
+    }
+    case '@map': {
+      const [address, label] = b.args;
+      const q = encodeURIComponent(address || '');
+      return `<div class="fx-map ${A}" data-interactive><iframe loading="lazy" src="https://www.google.com/maps?q=${q}&output=embed" title="Map"></iframe><a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 ${esc(label || address)} — open in Maps</a></div>`;
+    }
+    case '@rsvp': {
+      const [prompt, ...targets] = b.args;
+      const t = Object.fromEntries(targets.map(x => { const k = x.indexOf(':'); return [x.slice(0, k).trim().toLowerCase(), x.slice(k + 1).trim()]; }));
+      return `<form class="fx-rsvp ${A}" data-interactive data-rsvp data-wa="${esc(t.whatsapp || '')}" data-email="${esc(t.email || '')}"><div class="fx-rsvp-q">${inline(prompt || 'Will you join us?')}</div><input name="name" placeholder="Your name" required><div class="fx-rsvp-row"><label><input type="radio" name="attending" value="Joyfully accepts" required> Joyfully accept</label><label><input type="radio" name="attending" value="Regretfully declines"> Regretfully decline</label></div><input name="guests" type="number" min="1" max="20" value="1" aria-label="Number of guests"><input name="message" placeholder="A message for the hosts (optional)"><button class="fx-btn" type="submit">Send RSVP</button><div class="fx-rsvp-done" hidden>💌 Thank you! Your reply has been sent.</div></form>`;
+    }
+    case '@photos': {
+      const urls = splitUrls(b.args).slice(0, 6);
+      return `<div class="fx-photos fx-photos-${urls.length} ${A}" data-interactive data-photos>${urls.map((u, i) => `<img src="${esc(img(u, 'p' + i + u))}" alt="" loading="lazy">`).join('')}</div>`;
+    }
+    case '@names': { const [a, bb, date] = b.args; return `<div class="fx-names ${A}"><span>${esc(a)}</span><i>&amp;</i><span>${esc(bb)}</span>${date ? `<em>${esc(date)}</em>` : ''}</div>`; }
+    case '@center': return `<div class="fx-center ${A}">${inline(b.args.join(' | '))}</div>`;
     default: return '';
   }
 }
@@ -277,9 +318,12 @@ export function compose(src, { theme = 'aurora', aspect = 0.7071, cover = true, 
 
   // assemble final pages
   const pages = [];
+  const yes = (k) => /^(no|none|off|false)$/i.test(meta[k] || '');
+  if (yes('cover')) cover = false; if (yes('back')) back = false; if (yes('toc')) toc = false;
+  const noFolio = yes('folio');
   const wantToc = toc === true || (toc === 'auto' && chapters.length >= 3);
   const offset = (cover ? 1 : 0) + (wantToc ? 1 : 0);
-  const coverBg = meta.cover ? `<div class="fx-cover-art" style="background-image:url('${esc(img(meta.cover, title))}')"></div>` : '';
+  const coverBg = meta.cover && !yes('cover') ? `<div class="fx-cover-art" style="background-image:url('${esc(img(meta.cover, title))}')"></div>` : '';
   const wrap = (inner, cls = '', extra = '') => `<div class="fx-page fx-theme-${theme} ${cls}" style="--fx-h:${H}px">${inner}</div>${extra}`;
   if (cover) {
     pages.push({ html: wrap(`${coverBg}${meta.kicker ? `<div class="fx-kicker">${esc(meta.kicker)}</div>` : ''}<h1 class="fx-anim">${esc(title)}</h1>${meta.subtitle ? `<p class="fx-sub fx-anim">${esc(meta.subtitle)}</p>` : ''}${meta.author ? `<div class="fx-author fx-anim">${esc(meta.author)}</div>` : ''}`, 'fx-cover'), text: [title, meta.subtitle, meta.author].filter(Boolean).join('\n'), role: 'cover' });
@@ -292,7 +336,8 @@ export function compose(src, { theme = 'aurora', aspect = 0.7071, cover = true, 
   out.forEach((p, k) => {
     const ch = chapters.filter(c => c.idx <= k).pop(); if (ch) currentChapter = ch.title;
     const n = pages.length + 1;
-    pages.push({ html: wrap(`<div class="fx-body">${p.html}</div><div class="fx-folio"><span>${esc(currentChapter || title)}</span><b>${n}</b></div>`), text: p.text });
+    const full = /fx-photos|fx-fullbleed/.test(p.html) && !/<p|<h2|<h3/.test(p.html);
+    pages.push({ html: wrap(`<div class="fx-body${full ? ' fx-bleed' : ''}">${p.html}</div>${noFolio || full ? '' : `<div class="fx-folio"><span>${esc(currentChapter || title)}</span><b>${n}</b></div>`}`, full ? 'fx-photo-page' : ''), text: p.text });
   });
   if (back) {
     const cta = meta.cta ? meta.cta.split('|').map(s => s.trim()) : null;
