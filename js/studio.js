@@ -368,7 +368,7 @@ async function aiFlow() {
     <label class="field" data-only="api"><span>Anthropic API key</span><input type="password" data-key placeholder="${key ? '•••••• saved — leave empty to keep' : 'sk-ant-…'}" autocomplete="off"><small>Paid per use (about $0.20–0.50 per ebook). Stored only in this browser and sent directly to api.anthropic.com.</small></label>
     <label class="field"><span>What should it be about?</span><textarea rows="3" data-topic placeholder="e.g. A beginner's guide to sourdough baking at home"></textarea></label>
     <div class="grid2">
-      <label class="field"><span>Publication type</span><select data-type><option>ebook</option><option>online course workbook with quizzes</option><option>magazine issue</option><option>annual report</option><option>sales proposal</option><option>product brochure</option><option>employee handbook</option><option>newsletter</option><option>cookbook</option><option>travel guide</option><option>children's story book</option><option>case study</option></select></label>
+      <label class="field"><span>Publication type</span><select data-type><option>ebook</option><option>online course workbook with quizzes</option><option>magazine issue</option><option>annual report</option><option>sales proposal</option><option>product brochure</option><option>employee handbook</option><option>newsletter</option><option>cookbook</option><option>travel guide</option><option>children's story book</option><option>case study</option><option>digital visiting card</option><option>wedding invitation</option><option>birthday invitation</option><option>event invitation</option></select></label>
       <label class="field"><span>Audience</span><input data-aud placeholder="e.g. busy parents, CTOs, grade 5 students"></label>
       <label class="field"><span>Tone</span><select data-tone><option>friendly and practical</option><option>professional and concise</option><option>inspiring and story-driven</option><option>playful</option><option>academic</option><option>luxurious</option></select></label>
       <label class="field"><span>Length (chapters)</span><select data-len><option>3</option><option selected>5</option><option>7</option><option>10</option></select></label>
@@ -393,6 +393,13 @@ async function aiFlow() {
     el.querySelectorAll('[data-only]').forEach(n => { n.hidden = n.dataset.only !== m; });
     el.querySelector('[data-go]').innerHTML = m === 'free' ? `${icon('check', 16)} Create publication` : `${icon('spark', 16)} Generate`;
   };
+  el.querySelector('[data-theme]').addEventListener('change', (e) => { e.target.dataset.touched = '1'; });
+  el.querySelector('[data-type]').addEventListener('change', (e) => {
+    const t = e.target.value, ta = el.querySelector('[data-topic]');
+    ta.placeholder = t === 'digital visiting card' ? 'Name, job title, company, phone, WhatsApp, email, website, address, Instagram/LinkedIn links, and one line about what you do'
+      : t.endsWith('invitation') ? 'Names, date & time, venue with full address, functions/agenda, RSVP WhatsApp number or email, dress code, any special message'
+      : "e.g. A beginner's guide to sourdough baking at home";
+  });
   el.querySelectorAll('[data-mode] button').forEach(b => b.onclick = () => setMode(b.dataset.v));
   setMode(mode);
   el.querySelector('[data-copy]').onclick = async () => {
@@ -402,7 +409,15 @@ async function aiFlow() {
     catch { const t = el.querySelector('[data-paste]'); t.value = text; t.select(); toast('Select-all and copy this prompt, then clear the box', true); }
   };
   const finish = async (md) => {
-    const type = v('[data-type]').split(' ')[0];
+    const full = v('[data-type]');
+    if (full === 'digital visiting card' || full.endsWith('invitation')) {
+      const card = full === 'digital visiting card';
+      const auto = { 'digital visiting card': 'aurora', 'wedding invitation': 'royal', 'birthday invitation': 'festive', 'event invitation': 'noir' }[full];
+      const th = el.querySelector('[data-theme]').dataset.touched ? v('[data-theme]') : auto;
+      const b = await composedBook({ md, theme: th, size: card ? 'card' : 'invite', type: card ? 'card' : 'invitation' });
+      close(); toast(card ? 'Your visiting card is ready' : 'Your invitation is ready'); location.hash = '#/edit/' + b.id; return;
+    }
+    const type = full.split(' ')[0];
     const b = await composedBook({ md, theme: v('[data-theme]'), size: type === 'sales' ? 'landscape' : type === 'magazine' ? 'letter' : 'a4', type: ['magazine', 'annual', 'sales', 'product', 'newsletter', 'cookbook'].includes(type) ? { annual: 'report', sales: 'proposal', product: 'brochure' }[type] || type : 'ebook' });
     close(); toast('Your publication is ready'); location.hash = '#/edit/' + b.id;
   };

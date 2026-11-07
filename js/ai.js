@@ -34,7 +34,29 @@ Rules:
  * @returns {Promise<string>} final markdown
  */
 /** The user prompt for a new publication (shared by API mode and free copy/paste mode). */
+const SPECIAL = {
+  'digital visiting card': `This is a DIGITAL VISITING CARD, not a book. Use front matter title: (the person's or business name), subtitle: (role · company), kicker: (a short greeting such as "Hello, I'm"), author: (website or tagline), and the lines toc: none, back: none, folio: none.
+Then exactly two short pages separated by a line containing only ---:
+Page 1: "## " + a short heading (e.g. Let's connect), one sentence about what they do, then one @contact line: Name | Title | phone | email | website | address (use the details given; leave a part empty if unknown — never invent phone numbers or emails).
+Page 2: an @social line with only the profile links given, then "@qr <website> | Scan to visit" if a website is given, and an optional @button for booking or WhatsApp.
+Keep all text very short: it is a small card.`,
+  'wedding invitation': `This is a WEDDING INVITATION, not a book. Front matter: title: (the couple, e.g. Aarav & Diya), subtitle: (a warm invitation line), author: (date · city), kicker: Wedding invitation, toc: none, folio: none, backtitle:, backtext: (a short blessing).
+Pages separated by ---: (1) @names Name | Name | date line, then "@countdown YYYY-MM-DD HH:MM | label", then an @center sentence naming the venue. (2) "## Celebrations" with one @menu line per function: Function | date · time | place or dress code, then "@calendar Title | YYYY-MM-DD HH:MM | YYYY-MM-DD HH:MM | Venue". (3) "## Venue" with "@map <full address> | <venue name>", then "## Kindly reply" with "@rsvp <question> | whatsapp:<number>" (or email:) using the contact given.
+Use only the names, dates, venues and contacts given; never invent them — use clear placeholders like [Venue address] if missing.`,
+  'birthday invitation': `This is a BIRTHDAY INVITATION. Front matter: title:, subtitle:, author: (date · time), kicker: You're invited, toc: none, folio: none, backtitle:, backtext:. Pages separated by ---: (1) @countdown, a short "## Party plan" list, @calendar. (2) @map with the address and @rsvp with the contact given. Keep text short and fun; never invent addresses or numbers.`,
+  'event invitation': `This is an EVENT / LAUNCH INVITATION. Front matter: title:, subtitle:, author: (date · time · city), kicker: Exclusive invitation, toc: none, folio: none, backtitle:, backtext:, optional cta: Label | URL. Pages separated by ---: (1) @countdown and "## Agenda" with @menu lines (item | time), then @calendar. (2) @map with the venue and @rsvp with the contact given. Never invent addresses or contacts.`,
+};
+export const SPECIAL_TYPES = Object.keys(SPECIAL);
+
 export function buildUserPrompt({ topic, type, audience, tone, length, language, extras, sourceText }) {
+  if (SPECIAL[type]) return [
+    `Create a ${type}. Details: ${topic}`,
+    SPECIAL[type],
+    tone && `Tone: ${tone}`,
+    language && `Language: ${language}`,
+    extras && `Extra requirements: ${extras}`,
+    sourceText && `More details:\n<source>\n${sourceText.slice(0, 20000)}\n</source>`,
+  ].filter(Boolean).join('\n');
   return [
     `Create a ${type} about: ${topic}`,
     audience && `Audience: ${audience}`,
